@@ -1,0 +1,32 @@
+# Environments and secrets
+.env
+.env.*
+venv/
+.venv/
+env/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# OS specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+[Ee]xcluded/
+
+# Dataset files (large files exceeding GitHub limits)
+dataset/
+**/dataset/
+*.tsv
+*.csv
+
+# Output results
+student_resource/output/*
+**/output/*
+!**/output/.gitkeep
