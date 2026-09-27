@@ -266,7 +266,7 @@ def pair_feats(r1, r2):
 
 # ========================== Multi-Strategy Blocking ==========================
 def tfidf_block(names_query, ids_query, names_db, ids_db, top_k=50,
-                batch_sz=3000, min_sim=0.1, analyzer='char_wb', ngram_range=(3,4)):
+                batch_sz=1000, min_sim=0.1, analyzer='char_wb', ngram_range=(3,4)):
     """Generic TF-IDF blocking. Returns dict: query_id -> set of db_ids."""
     if not names_query or not names_db:
         return {}
@@ -304,7 +304,7 @@ def tfidf_block(names_query, ids_query, names_db, ids_db, top_k=50,
                     c.add(d_ids[j])
             if c:
                 cands[q_ids[st + i]] = c
-        if (bi + 1) % 50 == 0 or bi == nb - 1:
+        if (bi + 1) % 5 == 0 or bi == nb - 1:
             print(f"      batch {bi+1}/{nb}")
     del vec, d_tf
     gc.collect()
@@ -409,7 +409,7 @@ def run_training():
 
     # === Sample 80K S1 for train/val (larger = better) ===
     all_s1 = sorted(gt_all.keys())
-    sample_n = min(80000, len(all_s1))
+    sample_n = min(50000, len(all_s1))
     sampled = list(np.random.choice(all_s1, size=sample_n, replace=False))
     np.random.shuffle(sampled)
     val_n = int(sample_n * 0.15)
@@ -435,7 +435,7 @@ def run_training():
     print("\n[3] Loading S2...")
     s2a = pd.read_csv(os.path.join(TRAIN_DIR, "train_source2.tsv"), sep="\t")
     s2p = s2a[s2a["entity_id"].isin(needed_s23)]
-    ni = np.random.choice(len(s2a), size=min(200000, len(s2a)), replace=False)
+    ni = np.random.choice(len(s2a), size=min(100000, len(s2a)), replace=False)
     s2s = pd.concat([s2p, s2a.iloc[ni]]).drop_duplicates(subset="entity_id")
     del s2a, s2p; gc.collect()
     print(f"    S2 sample: {len(s2s):,}")
@@ -443,7 +443,7 @@ def run_training():
     print("\n[4] Loading S3...")
     s3a = pd.read_csv(os.path.join(TRAIN_DIR, "train_source3.tsv"), sep="\t")
     s3p = s3a[s3a["entity_id"].isin(needed_s23)]
-    ni = np.random.choice(len(s3a), size=min(200000, len(s3a)), replace=False)
+    ni = np.random.choice(len(s3a), size=min(100000, len(s3a)), replace=False)
     s3s = pd.concat([s3p, s3a.iloc[ni]]).drop_duplicates(subset="entity_id")
     del s3a, s3p; gc.collect()
     print(f"    S3 sample: {len(s3s):,}")
@@ -646,9 +646,9 @@ def run_training():
 
     # === Hard-negative mining: retrain with focused negatives ===
     print("\n[10] Hard-negative mining + retrain...")
-    # Add near-miss false positives with higher weight
-    hard_neg_indices = [i for i, (sid, cid) in enumerate(ptr) 
-                        if ytr[i] == 0 and model.predict_proba(Xtr[i:i+1])[:, 1][0] > 0.3]
+    # Batch predict all training proba at once
+    tr_proba = model.predict_proba(Xtr)[:, 1]
+    hard_neg_indices = np.where((ytr == 0) & (tr_proba > 0.3))[0]
     print(f"    Hard negatives (proba>0.3): {len(hard_neg_indices):,}")
 
     # Create weighted training with hard negatives upweighted
