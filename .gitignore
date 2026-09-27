@@ -4,6 +4,7 @@
 venv/
 .venv/
 env/
+*.zip
 
 # Python cache and bytecode
 __pycache__/
